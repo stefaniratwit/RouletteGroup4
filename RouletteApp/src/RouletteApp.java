@@ -6,12 +6,10 @@ import javafx.scene.layout.*;
 import javafx.stage.Stage;
 import java.util.*;
 
-// Interface for playable games
 interface Playable {
     void playTurn(int bet, String[] selectedNumbers);
 }
 
-// Abstract Game class
 abstract class Game {
     protected int bankRoll;
     protected int spinCount;
@@ -22,6 +20,7 @@ abstract class Game {
     }
 
     public abstract void playTurn(int bet, String[] selectedNumbers);
+
     public int getBankRoll() {
         return bankRoll;
     }
@@ -33,7 +32,6 @@ abstract class Game {
     public abstract void showSummary();
 }
 
-// Roulette class
 class Roulette extends Game implements Playable {
     private List<Integer> spinHistory;
     private TextArea outputArea;
@@ -118,7 +116,6 @@ class Roulette extends Game implements Playable {
     }
 }
 
-// JavaFX App class
 public class RouletteApp extends Application {
     private Roulette roulette;
     private TextField bankrollInput = new TextField();
@@ -142,7 +139,7 @@ public class RouletteApp extends Application {
                 startButton,
                 new Separator(),
                 new Label("Bet Amount:"), betInput,
-                new Label("Select Numbers (comma-separated) 1-37:"), numbersInput,
+                new Label("Select Numbers (comma-separated) 00; 1-36:"), numbersInput,
                 playTurnButton,
                 summaryButton,
                 new Label("Game Output:"),
@@ -167,10 +164,39 @@ public class RouletteApp extends Application {
                 outputArea.appendText("Please start the game first.\n");
                 return;
             }
+
             try {
                 int bet = Integer.parseInt(betInput.getText());
                 String[] numbers = numbersInput.getText().split(",");
-                roulette.playTurn(bet, numbers);
+
+                List<String> cleaned = new ArrayList<>();
+                for (String s : numbers) {
+                    s = s.trim();
+                    if (s.equals("00")) {
+                        cleaned.add(s);
+                    } else if (s.matches("\\d+")) {
+                        int num = Integer.parseInt(s);
+                        if (num >= 1 && num <= 36) {
+                            cleaned.add(s);
+                        } else {
+                            outputArea.appendText("Invalid number: " + num + ". Please enter numbers between 1 and 36 or '00'.\n");
+                            return;
+                        }
+                    } else {
+                        outputArea.appendText("Invalid input: '" + s + "'. Only digits and '00' are allowed.\n");
+                        return;
+                    }
+                }
+
+                int count = cleaned.size();
+                Set<Integer> validBets = Set.of(1, 2, 3, 4, 6, 12, 18);
+                if (!validBets.contains(count)) {
+                    outputArea.appendText("Invalid number of selections (" + count + "). Please select 1, 2, 3, 4, 6, 12, or 18 numbers.\n");
+                    return;
+                }
+
+                roulette.playTurn(bet, cleaned.toArray(new String[0]));
+
             } catch (NumberFormatException ex) {
                 outputArea.appendText("Please enter a valid number for the bet.\n");
             }
